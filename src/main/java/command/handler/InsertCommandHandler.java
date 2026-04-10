@@ -2,7 +2,7 @@ package command.handler;
 
 import command.CommandResult;
 import command.SqlCommandHandler;
-import parser.Token;
+import lexer.Token;
 import store.Database;
 
 import java.util.List;

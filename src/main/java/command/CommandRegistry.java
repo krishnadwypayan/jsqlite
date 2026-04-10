@@ -4,8 +4,8 @@ import command.handler.CreateTableCommandHandler;
 import command.handler.ExitCommandHandler;
 import command.handler.InsertCommandHandler;
 import command.handler.SelectCommandHandler;
-import parser.Lexer;
-import parser.Token;
+import lexer.Lexer;
+import lexer.Token;
 import store.Database;
 
 import java.util.EnumMap;

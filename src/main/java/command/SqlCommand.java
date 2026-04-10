@@ -2,7 +2,7 @@ package command;
 
 import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
-import parser.Token;
+import lexer.Token;
 
 import java.util.Arrays;
 import java.util.List;

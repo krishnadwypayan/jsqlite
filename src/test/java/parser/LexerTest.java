@@ -1,5 +1,8 @@
 package parser;
 
+import lexer.Lexer;
+import lexer.Token;
+import lexer.TokenType;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

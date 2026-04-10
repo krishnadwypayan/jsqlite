@@ -1,4 +1,4 @@
-package parser;
+package lexer;
 
 public record Token(TokenType tokenType, String value) {
 

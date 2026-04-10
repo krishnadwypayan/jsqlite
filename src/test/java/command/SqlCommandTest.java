@@ -1,8 +1,8 @@
 package command;
 
 import org.junit.jupiter.api.Test;
-import parser.Lexer;
-import parser.Token;
+import lexer.Lexer;
+import lexer.Token;
 
 import java.util.List;
 import java.util.Optional;

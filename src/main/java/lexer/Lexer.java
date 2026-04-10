@@ -1,4 +1,4 @@
-package parser;
+package lexer;
 
 import java.util.ArrayList;
 import java.util.List;

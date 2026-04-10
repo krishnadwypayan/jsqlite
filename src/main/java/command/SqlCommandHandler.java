@@ -1,6 +1,6 @@
 package command;
 
-import parser.Token;
+import lexer.Token;
 
 import java.util.List;
 
