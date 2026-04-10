@@ -11,54 +11,89 @@ public class Lexer {
         int i = 0;
         while (i < length) {
             char c = input.charAt(i);
-            if (c == '(' || c == ')' || c == ',' || c == ';') {
-                tokens.add(new Token(getTokenType(c), String.valueOf(c)));
-            } else if (c != ' ') {
-                TokenType tokenType;
-                if (c >= '0' && c <= '9') { // NUMBER_LITERAL
-                    tokenType = TokenType.NUMBER_LITERAL;
-                } else if (c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
-                    tokenType = TokenType.IDENTIFIER;
-                } else {
-                    throw new UnsupportedOperationException("Failed to parse input");
-                }
-
-                StringBuilder builder = new StringBuilder();
-                while (i < length && isWordChar(input.charAt(i))) {
-                    builder.append(input.charAt(i));
+            switch (c) {
+                case ' ' -> i++;
+                case '(' -> {
+                    tokens.add(new Token(TokenType.LEFT_PARENTHESIS, String.valueOf(c)));
                     i++;
                 }
-                String token = builder.toString();
-                if (Keyword.fromInput(token).isPresent()) {
-                    tokenType = TokenType.KEYWORD;
+                case ')' -> {
+                    tokens.add(new Token(TokenType.RIGHT_PARENTHESIS, String.valueOf(c)));
+                    i++;
                 }
-                tokens.add(new Token(tokenType, token));
-                continue;
+                case ',' -> {
+                    tokens.add(new Token(TokenType.COMMA, String.valueOf(c)));
+                    i++;
+                }
+                case ';' -> {
+                    tokens.add(new Token(TokenType.SEMICOLON, String.valueOf(c)));
+                    i++;
+                }
+                case '*' -> {
+                    tokens.add(new Token(TokenType.STAR, String.valueOf(c)));
+                    i++;
+                }
+                case '\'' -> {
+                    i++;
+                    StringBuilder builder = new StringBuilder();
+                    while (i < length) {
+                        if (input.charAt(i) == '\'') {
+                            if (i+1 < length && input.charAt(i+1) == '\'') {
+                                builder.append(input.charAt(i+1));
+                                i += 2;
+                            } else {
+                                break;
+                            }
+                        } else if (input.charAt(i) == '\\') {
+                            if (i+1 < length) {
+                                builder.append(input.charAt(i+1));
+                                i += 2;
+                            } else {
+                                throw new UnsupportedOperationException("Failed to parse input");
+                            }
+                        }
+                        else {
+                            builder.append(input.charAt(i));
+                            i++;
+                        }
+                    }
+
+                    if (i >= length || input.charAt(i) != '\'') {
+                        throw new UnsupportedOperationException("Failed to parse input");
+                    }
+
+                    tokens.add(new Token(TokenType.STRING_LITERAL, builder.toString()));
+                    i++;
+                }
+                default -> {
+                    if (!Character.isLetterOrDigit(c) && c != '_') {
+                        throw new UnsupportedOperationException("Failed to parse input");
+                    }
+
+                    StringBuilder builder = new StringBuilder();
+                    while (i < length && isWordChar(input.charAt(i))) {
+                        builder.append(input.charAt(i));
+                        i++;
+                    }
+                    String word = builder.toString();
+
+                    TokenType tokenType;
+                    if (Keyword.fromInput(word).isPresent()) {
+                        tokenType = TokenType.KEYWORD;
+                    } else if (word.chars().allMatch(Character::isDigit)) {
+                        tokenType = TokenType.NUMBER_LITERAL;
+                    } else {
+                        tokenType = TokenType.IDENTIFIER;
+                    }
+                    tokens.add(new Token(tokenType, word));
+                }
             }
-            i++;
         }
         return tokens;
     }
 
     private boolean isWordChar(char c) {
         return Character.isLetterOrDigit(c) || c == '_';
-    }
-
-    private TokenType getTokenType(char c) {
-        if (c == '(') {
-            return TokenType.LEFT_PARENTHESIS;
-        }
-        if (c == ')') {
-            return TokenType.RIGHT_PARENTHESIS;
-        }
-        if (c == ',') {
-            return TokenType.COMMA;
-        }
-        if (c == ';') {
-            return TokenType.SEMICOLON;
-        }
-
-        throw new UnsupportedOperationException("unsupported token");
     }
 
 }

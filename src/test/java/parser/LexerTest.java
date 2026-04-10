@@ -111,4 +111,73 @@ class LexerTest {
     void unsupportedCharacterThrows() {
         assertThrows(UnsupportedOperationException.class, () -> lexer.tokenize("@"));
     }
+
+    @Test
+    void simpleStringLiteral() {
+        List<Token> tokens = lexer.tokenize("'alice'");
+        assertEquals(List.of(new Token(TokenType.STRING_LITERAL, "alice")), tokens);
+    }
+
+    @Test
+    void stringLiteralWithSpaces() {
+        List<Token> tokens = lexer.tokenize("'hello world'");
+        assertEquals(List.of(new Token(TokenType.STRING_LITERAL, "hello world")), tokens);
+    }
+
+    @Test
+    void stringLiteralWithSqlEscapedQuote() {
+        List<Token> tokens = lexer.tokenize("'it''s'");
+        assertEquals(List.of(new Token(TokenType.STRING_LITERAL, "it's")), tokens);
+    }
+
+    @Test
+    void stringLiteralWithBackslashEscapedQuote() {
+        List<Token> tokens = lexer.tokenize("'it\\'s'");
+        assertEquals(List.of(new Token(TokenType.STRING_LITERAL, "it's")), tokens);
+    }
+
+    @Test
+    void starToken() {
+        List<Token> tokens = lexer.tokenize("*");
+        assertEquals(List.of(new Token(TokenType.STAR, "*")), tokens);
+    }
+
+    @Test
+    void tokenizeStandardInsertStatement() {
+        List<Token> tokens = lexer.tokenize("insert into users values (1, 'alice')");
+        assertEquals(List.of(
+                new Token(TokenType.KEYWORD, "insert"),
+                new Token(TokenType.KEYWORD, "into"),
+                new Token(TokenType.IDENTIFIER, "users"),
+                new Token(TokenType.KEYWORD, "values"),
+                new Token(TokenType.LEFT_PARENTHESIS, "("),
+                new Token(TokenType.NUMBER_LITERAL, "1"),
+                new Token(TokenType.COMMA, ","),
+                new Token(TokenType.STRING_LITERAL, "alice"),
+                new Token(TokenType.RIGHT_PARENTHESIS, ")")
+        ), tokens);
+    }
+
+    @Test
+    void tokenizeSelectStarFromTable() {
+        List<Token> tokens = lexer.tokenize("select * from users");
+        assertEquals(List.of(
+                new Token(TokenType.KEYWORD, "select"),
+                new Token(TokenType.STAR, "*"),
+                new Token(TokenType.KEYWORD, "from"),
+                new Token(TokenType.IDENTIFIER, "users")
+        ), tokens);
+    }
+
+    @Test
+    void unterminatedStringThrows() {
+        assertThrows(UnsupportedOperationException.class, () -> lexer.tokenize("'alice"));
+    }
+
+    @Test
+    void newKeywordsRecognized() {
+        assertEquals(TokenType.KEYWORD, lexer.tokenize("values").get(0).tokenType());
+        assertEquals(TokenType.KEYWORD, lexer.tokenize("from").get(0).tokenType());
+        assertEquals(TokenType.KEYWORD, lexer.tokenize("where").get(0).tokenType());
+    }
 }

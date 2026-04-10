@@ -8,6 +8,8 @@ public enum TokenType {
     LEFT_PARENTHESIS,
     RIGHT_PARENTHESIS,
     COMMA,
-    SEMICOLON
+    SEMICOLON,
+    STRING_LITERAL,
+    STAR
 
 }

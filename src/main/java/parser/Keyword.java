@@ -15,7 +15,10 @@ public enum Keyword {
     INTO,
     NUMBER,
     CHAR,
-    VARCHAR
+    VARCHAR,
+    VALUES,
+    FROM,
+    WHERE
     ;
 
     private static final Map<String, Keyword> LOOKUP = Arrays.stream(Keyword.values())
