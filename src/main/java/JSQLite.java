@@ -10,6 +10,7 @@ void main() throws IOException {
     while (true) {
         printPrompt();
         String input = readInput();
+        if (input == null) break;
 
         CommandResult commandResult = commandRegistry.dispatch(input);
         switch (commandResult) {

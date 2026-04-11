@@ -1,11 +1,9 @@
 package command;
 
-import lexer.Token;
-
-import java.util.List;
+import parser.Statement;
 
 public non-sealed interface SqlCommandHandler extends CommandHandler {
 
-    CommandResult execute(List<Token> statement);
+    CommandResult execute(Statement statement);
 
 }

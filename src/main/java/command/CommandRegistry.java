@@ -6,6 +6,11 @@ import command.handler.InsertCommandHandler;
 import command.handler.SelectCommandHandler;
 import lexer.Lexer;
 import lexer.Token;
+import parser.CreateTableStatement;
+import parser.InsertStatement;
+import parser.Parser;
+import parser.SelectStatement;
+import parser.Statement;
 import store.Database;
 
 import java.util.EnumMap;
@@ -17,15 +22,18 @@ public class CommandRegistry {
     private final Database database;
     private final Lexer lexer;
     private final Map<MetaCommand, MetaCommandHandler> metaCommands = new EnumMap<>(MetaCommand.class);
-    private final Map<SqlCommand, SqlCommandHandler> sqlCommands = new EnumMap<>(SqlCommand.class);
+
+    private final SelectCommandHandler selectCommandHandler;
+    private final InsertCommandHandler insertCommandHandler;
+    private final CreateTableCommandHandler createTableCommandHandler;
 
     public CommandRegistry() {
         lexer = new Lexer();
         database = new Database();
         metaCommands.put(MetaCommand.EXIT, new ExitCommandHandler());
-        sqlCommands.put(SqlCommand.SELECT, new SelectCommandHandler(database));
-        sqlCommands.put(SqlCommand.INSERT, new InsertCommandHandler(database));
-        sqlCommands.put(SqlCommand.CREATE, new CreateTableCommandHandler(database));
+        selectCommandHandler = new SelectCommandHandler(database);
+        insertCommandHandler = new InsertCommandHandler(database);
+        createTableCommandHandler = new CreateTableCommandHandler(database);
     }
 
     public CommandResult dispatch(String input) {
@@ -41,10 +49,11 @@ public class CommandRegistry {
         }
 
         List<Token> tokens = lexer.tokenize(input);
-
-        return SqlCommand.fromInput(tokens)
-                .map(sqlCommands::get)
-                .map(h -> h.execute(tokens))
-                .orElse(CommandResult.UNRECOGNIZED_STATEMENT);
+        Statement statement = new Parser(tokens).parse();
+        return switch (statement) {
+            case CreateTableStatement ignored -> createTableCommandHandler.execute(statement);
+            case InsertStatement ignored -> insertCommandHandler.execute(statement);
+            case SelectStatement ignored -> selectCommandHandler.execute(statement);
+        };
     }
 }

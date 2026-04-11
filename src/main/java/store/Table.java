@@ -9,7 +9,7 @@ public class Table {
 
     private static final int PAGE_SIZE = 4096;
     private static final int MAX_PAGES = 1_000;
-    
+
     private final int ROWS_PER_PAGE;
     private final byte[][] pages;
     private final RowSerializer rowSerializer;
@@ -17,7 +17,11 @@ public class Table {
     @Getter
     private int numRows;
 
+    @Getter
+    private final List<Column> columns;
+
     public Table(List<Column> columns) {
+        this.columns = columns;
         this.rowSerializer = new RowSerializer(columns);
         ROWS_PER_PAGE = PAGE_SIZE/rowSerializer.getRowSize();
         pages = new byte[MAX_PAGES][];
