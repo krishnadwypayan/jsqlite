@@ -31,10 +31,10 @@ public class SelectCommandHandler implements SqlCommandHandler {
             throw new CommandHandlerExecutionException(String.format("table not found %s", selectStatement.tableName()));
         }
 
-        Map<Object, Column> tableColumns = table.getColumns().stream().collect(Collectors.toUnmodifiableMap(c -> c.name(), Function.identity()));
+        Map<Object, Column> tableColumns = table.getColumns().stream().collect(Collectors.toUnmodifiableMap(Column::name, Function.identity()));
         List<Column> queryColumns;
         if (selectStatement.columns().getFirst().equals("*")) {
-            queryColumns = tableColumns.values().stream().toList();
+            queryColumns = table.getColumns();
         } else {
             queryColumns = selectStatement.columns().stream().map(tableColumns::get).toList();
         }
