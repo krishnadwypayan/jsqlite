@@ -12,7 +12,14 @@ void main() throws IOException {
         String input = readInput();
         if (input == null) break;
 
-        CommandResult commandResult = commandRegistry.dispatch(input);
+        CommandResult commandResult;
+        try {
+            commandResult = commandRegistry.dispatch(input);
+        } catch (Exception e) {
+            out.printf("Error: %s\n", e.getMessage());
+            out.flush();
+            continue;
+        }
         switch (commandResult) {
             case EXIT -> {
                 bufferedReader.close();
