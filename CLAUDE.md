@@ -15,19 +15,25 @@ A Java SQLite implementation, following cstack's [db_tutorial](https://cstack.gi
 ```
 src/main/java/
   JSQLite.java                  # REPL entry point
-  parser/                       # SQL lexer/tokenizer
+  lexer/                        # SQL lexer/tokenizer
     Lexer, Token, TokenType, Keyword
+  parser/                       # Recursive descent parser & AST
+    Parser, ParseException
+    Statement (sealed), CreateTableStatement, InsertStatement,
+    SelectStatement, ColumnDefinition
   store/                        # Storage layer
     Table, RowSerializer, Column, ColumnType, ColumnValue, Database
   command/                      # Command dispatch
-    SqlCommand, CommandRegistry, CommandHandler, MetaCommand, CommandResult
+    CommandRegistry, CommandHandler, MetaCommand, CommandResult,
+    SqlCommandHandler, MetaCommandHandler
     handler/                    # Per-statement handlers
-      InsertCommandHandler, SelectCommandHandler,
-      CreateTableCommandHandler, ExitCommandHandler
+      CreateTableCommandHandler, InsertCommandHandler,
+      SelectCommandHandler, ExitCommandHandler,
+      CommandHandlerExecutionException
 src/test/java/
-  parser/LexerTest
+  parser/LexerTest, ParserTest
   store/RowSerializerTest, TableTest
-  command/SqlCommandTest
+  command/CommandRegistryTest
 ```
 
 ## Conventions
@@ -35,7 +41,7 @@ src/test/java/
 - Java 17+, Gradle build
 - Lombok for boilerplate reduction
 - JUnit 5 for tests
-- Package-per-layer: `parser`, `store`, `command`
+- Package-per-layer: `lexer`, `parser`, `store`, `command`
 
 ## Mentoring Context
 
@@ -49,14 +55,17 @@ This is a mentored learning project. The developer is a senior engineer learning
 
 ## Current Progress
 
-- REPL loop (JSQLite.java)
-- Lexer/tokenizer with keyword recognition
+- REPL loop (JSQLite.java) with EOF handling
+- Lexer: tokenizes SQL with string literals, keywords, identifiers, numbers, star
+- Parser: recursive descent producing sealed Statement AST nodes
 - Storage layer: Table with fixed-size row serialization, Database wrapper
-- Command dispatch: registry pattern with per-statement handlers
-- Tests for lexer, row serializer, table operations, SQL command parsing
+- Command dispatch: pattern matching on Statement type (SqlCommand enum removed)
+- Handlers: CREATE TABLE, INSERT INTO ... VALUES, SELECT (* and named columns)
+- Pretty-printed table output with borders
+- Tests: LexerTest, ParserTest, CommandRegistryTest, RowSerializerTest, TableTest
 
 ## Next Steps
 
-- Wire the SQL compiler: Parser producing AST nodes
-- Connect AST to command handlers
+- WHERE clause for SELECT
 - B-tree storage engine
+- Error handling (graceful errors in REPL instead of stack traces)
