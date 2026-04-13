@@ -7,6 +7,8 @@ final CommandRegistry commandRegistry = new CommandRegistry();
 
 void main() throws IOException {
 
+    Runtime.getRuntime().addShutdownHook(new Thread(commandRegistry::close));
+
     while (true) {
         printPrompt();
         String input = readInput();
@@ -22,8 +24,9 @@ void main() throws IOException {
         }
         switch (commandResult) {
             case EXIT -> {
+                commandRegistry.close();
                 bufferedReader.close();
-                System.exit(0);
+                return;
             }
             case PREPARE_SUCCESS, PREPARE_SYNTAX_ERROR -> {}
             case UNRECOGNIZED_COMMAND -> out.printf("Unrecognized command '%s'.\n", input);

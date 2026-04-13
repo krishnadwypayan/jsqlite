@@ -72,6 +72,11 @@ public class RowSerializer {
         return columnValues;
     }
 
+    public void serializeRowCount(byte[] page, int count) {
+        ByteBuffer buffer = ByteBuffer.wrap(page);
+        buffer.putInt(count);
+    }
+
     private byte[] padToFixedSize(String value, int size) {
         byte[] src = value.getBytes(StandardCharsets.UTF_8);
         byte[] dest = new byte[size];

@@ -44,3 +44,6 @@ bin/
 
 ### IntelliJ IDEA (full) ###
 .idea/
+
+### Database ###
+data/*.db

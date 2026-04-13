@@ -56,4 +56,8 @@ public class CommandRegistry {
             case SelectStatement ignored -> selectCommandHandler.execute(statement);
         };
     }
+
+    public void close() {
+        database.close();
+    }
 }
