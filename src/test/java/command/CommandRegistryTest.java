@@ -54,13 +54,13 @@ class CommandRegistryTest {
 
     @Test
     void createTableReturnsSuccess() {
-        CommandResult result = registry.dispatch("create table users (id number, name char(32))");
+        CommandResult result = registry.dispatch("create table users (id number primary key, name char(32))");
         assertEquals(CommandResult.PREPARE_SUCCESS, result);
     }
 
     @Test
     void createTableWithSemicolonReturnsSuccess() {
-        CommandResult result = registry.dispatch("create table users (id number);");
+        CommandResult result = registry.dispatch("create table users (id number primary key);");
         assertEquals(CommandResult.PREPARE_SUCCESS, result);
     }
 
@@ -68,7 +68,7 @@ class CommandRegistryTest {
 
     @Test
     void insertReturnsSuccess() {
-        registry.dispatch("create table users (id number, name char(32))");
+        registry.dispatch("create table users (id number primary key, name char(32))");
         CommandResult result = registry.dispatch("insert into users values (1, 'alice')");
         assertEquals(CommandResult.PREPARE_SUCCESS, result);
     }
@@ -81,7 +81,7 @@ class CommandRegistryTest {
 
     @Test
     void insertWrongValueCountThrows() {
-        registry.dispatch("create table users (id number, name char(32))");
+        registry.dispatch("create table users (id number primary key, name char(32))");
         assertThrows(CommandHandlerExecutionException.class,
                 () -> registry.dispatch("insert into users values (1)"));
     }
@@ -90,7 +90,7 @@ class CommandRegistryTest {
 
     @Test
     void selectStarReturnsSuccess() {
-        registry.dispatch("create table users (id number, name char(32))");
+        registry.dispatch("create table users (id number primary key, name char(32))");
         registry.dispatch("insert into users values (1, 'alice')");
         CommandResult result = registry.dispatch("select * from users");
         assertEquals(CommandResult.PREPARE_SUCCESS, result);
@@ -98,7 +98,7 @@ class CommandRegistryTest {
 
     @Test
     void selectColumnsReturnsSuccess() {
-        registry.dispatch("create table users (id number, name char(32))");
+        registry.dispatch("create table users (id number primary key, name char(32))");
         registry.dispatch("insert into users values (1, 'alice')");
         CommandResult result = registry.dispatch("select id from users");
         assertEquals(CommandResult.PREPARE_SUCCESS, result);
@@ -115,7 +115,7 @@ class CommandRegistryTest {
     @Test
     void fullPipelineCreateInsertSelect() {
         assertEquals(CommandResult.PREPARE_SUCCESS,
-                registry.dispatch("create table users (id number, name char(32), age number)"));
+                registry.dispatch("create table users (id number primary key, name char(32), age number)"));
         assertEquals(CommandResult.PREPARE_SUCCESS,
                 registry.dispatch("insert into users values (1, 'alice', 25)"));
         assertEquals(CommandResult.PREPARE_SUCCESS,
@@ -128,8 +128,8 @@ class CommandRegistryTest {
 
     @Test
     void multipleTablesWork() {
-        registry.dispatch("create table users (id number, name char(32))");
-        registry.dispatch("create table posts (id number, title varchar(100))");
+        registry.dispatch("create table users (id number primary key, name char(32))");
+        registry.dispatch("create table posts (id number primary key, title varchar(100))");
         registry.dispatch("insert into users values (1, 'alice')");
         registry.dispatch("insert into posts values (1, 'hello world')");
         assertEquals(CommandResult.PREPARE_SUCCESS, registry.dispatch("select * from users"));
@@ -148,7 +148,7 @@ class CommandRegistryTest {
 
     @Test
     void dataPersistsAcrossRestart() {
-        registry.dispatch("create table users (id number, name char(32))");
+        registry.dispatch("create table users (id number primary key, name char(32))");
         registry.dispatch("insert into users values (1, 'alice')");
         registry.dispatch("insert into users values (2, 'bob')");
         registry.close();
@@ -159,8 +159,8 @@ class CommandRegistryTest {
 
     @Test
     void multipleTablesPersistAcrossRestart() {
-        registry.dispatch("create table users (id number, name char(32))");
-        registry.dispatch("create table posts (id number, title varchar(100))");
+        registry.dispatch("create table users (id number primary key, name char(32))");
+        registry.dispatch("create table posts (id number primary key, title varchar(100))");
         registry.dispatch("insert into users values (1, 'alice')");
         registry.dispatch("insert into posts values (1, 'hello world')");
         registry.close();
@@ -172,7 +172,7 @@ class CommandRegistryTest {
 
     @Test
     void emptyTablePersistsAcrossRestart() {
-        registry.dispatch("create table users (id number, name char(32))");
+        registry.dispatch("create table users (id number primary key, name char(32))");
         registry.close();
 
         registry = new CommandRegistry(tempFile.getAbsolutePath());

@@ -34,8 +34,12 @@ public class CreateTableCommandHandler implements SqlCommandHandler {
                             columnDefinition.size() == 0 ? columnType.get().getSize() : columnDefinition.size(),
                             columnDefinition.primaryKey());
                 }).toList();
-        database.createTable(createTableStatement.tableName(), columns);
 
+        if (columns.stream().noneMatch(Column::primaryKey)) {
+            throw new CommandHandlerExecutionException("No primary key column given");
+        }
+
+        database.createTable(createTableStatement.tableName(), columns);
         return CommandResult.PREPARE_SUCCESS;
     }
 

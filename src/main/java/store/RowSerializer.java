@@ -33,8 +33,9 @@ public class RowSerializer {
         return offsets;
     }
 
-    public void serialize(List<ColumnValue> columnValues, byte[] page, int offset) {
-        ByteBuffer rowBuf = ByteBuffer.wrap(page, offset, rowSize);
+    public byte[] serialize(List<ColumnValue> columnValues) {
+        byte[] row = new byte[rowSize];
+        ByteBuffer rowBuf = ByteBuffer.wrap(row);
         CollectionUtils.emptyIfNull(columnValues).forEach(columnValue -> {
             Column column = columnValue.column();
             Integer colOffset = offsets.get(column.name());
@@ -42,24 +43,25 @@ public class RowSerializer {
                 throw new IllegalArgumentException("invalid column name: " + column.name());
             }
 
-            rowBuf.position(offset + colOffset);
+            rowBuf.position(colOffset);
             switch (column.type()) {
                 case NUMBER -> rowBuf.putInt((Integer) columnValue.value());
                 case CHAR,VARCHAR -> rowBuf.put(padToFixedSize((String) columnValue.value(), column.size()));
             }
         });
+        return row;
     }
 
-    public List<ColumnValue> deserialize(byte[] page, int offset) {
+    public List<ColumnValue> deserialize(byte[] rowBytes) {
         List<ColumnValue> columnValues = new ArrayList<>();
-        ByteBuffer rowBuffer = ByteBuffer.wrap(page, offset, rowSize);
+        ByteBuffer rowBuffer = ByteBuffer.wrap(rowBytes);
         CollectionUtils.emptyIfNull(columns).forEach(column -> {
             Integer columnOffset = offsets.get(column.name());
             if (columnOffset == null) {
                 throw new IllegalArgumentException("invalid column name: " + column.name());
             }
 
-            rowBuffer.position(offset + columnOffset);
+            rowBuffer.position(columnOffset);
             switch (column.type()) {
                 case NUMBER -> columnValues.add(new ColumnValue(column, rowBuffer.getInt()));
                 case CHAR, VARCHAR -> {
@@ -70,11 +72,6 @@ public class RowSerializer {
             }
         });
         return columnValues;
-    }
-
-    public void serializeRowCount(byte[] page, int count) {
-        ByteBuffer buffer = ByteBuffer.wrap(page);
-        buffer.putInt(count);
     }
 
     private byte[] padToFixedSize(String value, int size) {

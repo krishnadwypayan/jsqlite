@@ -25,7 +25,7 @@ class TableTest {
     }
 
     @AfterEach
-    void tearDown() throws IOException {
+    void tearDown() {
         pager.close();
         tempFile.delete();
     }
@@ -35,49 +35,58 @@ class TableTest {
     }
 
     @Test
-    void insertAndReadBack() {
+    void insertAndReadBackAllRows() {
         Table table = new Table(pager, 1, columns);
         assertTrue(table.insertRow(makeRow(1, "alice")));
+        assertTrue(table.insertRow(makeRow(2, "bob")));
 
-        List<ColumnValue> row = table.getRow(0);
-        assertEquals(1, row.get(0).value());
-        assertEquals("alice", row.get(1).value());
+        List<List<ColumnValue>> rows = table.getAllRows();
+        assertEquals(2, rows.size());
+        assertEquals(1, rows.get(0).get(0).value());
+        assertEquals("alice", rows.get(0).get(1).value());
+        assertEquals(2, rows.get(1).get(0).value());
+        assertEquals("bob", rows.get(1).get(1).value());
     }
 
     @Test
-    void insertMultipleRowsAcrossPageBoundary() {
+    void getRowByKey() {
         Table table = new Table(pager, 1, columns);
-        // row size = 4 + 32 = 36 bytes, page = 4096 bytes => 113 rows per page
-        int rowsToInsert = 120; // crosses into second page
+        table.insertRow(makeRow(1, "alice"));
+        table.insertRow(makeRow(2, "bob"));
+
+        List<ColumnValue> row = table.getRowByKey(2);
+        assertNotNull(row);
+        assertEquals(2, row.get(0).value());
+        assertEquals("bob", row.get(1).value());
+    }
+
+    @Test
+    void getRowByKeyNotFound() {
+        Table table = new Table(pager, 1, columns);
+        table.insertRow(makeRow(1, "alice"));
+
+        assertNull(table.getRowByKey(99));
+    }
+
+    @Test
+    void insertMultipleRows() {
+        Table table = new Table(pager, 1, columns);
+        int rowsToInsert = 50;
         for (int i = 0; i < rowsToInsert; i++) {
             assertTrue(table.insertRow(makeRow(i, "user" + i)));
         }
-        assertEquals(rowsToInsert, table.getNumRows());
 
-        // verify first and last rows
-        assertEquals(0, table.getRow(0).get(0).value());
-        assertEquals(119, table.getRow(119).get(0).value());
-        assertEquals("user119", table.getRow(119).get(1).value());
+        List<List<ColumnValue>> rows = table.getAllRows();
+        assertEquals(rowsToInsert, rows.size());
+        assertEquals(0, rows.get(0).get(0).value());
+        assertEquals(49, rows.get(49).get(0).value());
+        assertEquals("user49", rows.get(49).get(1).value());
     }
 
     @Test
-    void insertWhenFullReturnsFalse() {
-        // Use a large row to reduce max capacity: row size = 4 + 4092 = 4096 => 1 row per page
-        Column big = new Column("big", ColumnType.CHAR, 4092, false);
-        Table table = new Table(pager, 1, List.of(id, big));
-        // 1 row per page * 1000 pages = 1000 rows max
-        for (int i = 0; i < 998; i++) {
-            assertTrue(table.insertRow(List.of(new ColumnValue(id, i), new ColumnValue(big, "x"))));
-        }
-        assertFalse(table.insertRow(List.of(new ColumnValue(id, 999), new ColumnValue(big, "x"))));
-        assertFalse(table.insertRow(List.of(new ColumnValue(id, 1000), new ColumnValue(big, "x"))));
-    }
-
-    @Test
-    void getRowWithInvalidIndex() {
+    void emptyTableReturnsNoRows() {
         Table table = new Table(pager, 1, columns);
-        table.insertRow(makeRow(1, "alice"));
-        // index beyond numRows returns empty list
-        assertTrue(table.getRow(5).isEmpty());
+        List<List<ColumnValue>> rows = table.getAllRows();
+        assertTrue(rows.isEmpty());
     }
 }

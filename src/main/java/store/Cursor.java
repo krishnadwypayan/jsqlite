@@ -1,78 +1,51 @@
 package store;
 
+import btree.LeafNode;
 import lombok.Getter;
-
-import static store.DatabaseConstants.MAX_PAGES;
-import static store.DatabaseConstants.PAGE_SIZE;
-import static store.DatabaseConstants.TABLE_ROW_START_OFFSET;
 
 public class Cursor {
 
     private final Pager pager;
     private final int startPage;
-    private final int rowSize;
-    private final int numRows;
-
-    private final int ROWS_IN_START_PAGE;
-    private final int ROWS_PER_PAGE;
-
-    @Getter
-    private int rowNumber; // current row position
+    private final LeafNode leafNode;
+    private int cellIndex;
 
     @Getter
     private boolean endOfTable;
 
-    public Cursor(Pager pager, int startPage, int rowSize, int numRows, int rowNumber) {
-        ROWS_IN_START_PAGE = (PAGE_SIZE - TABLE_ROW_START_OFFSET) / rowSize;
-        ROWS_PER_PAGE = PAGE_SIZE / rowSize;
+    public Cursor(Pager pager, int startPage, int rowSize) {
+        this.leafNode = LeafNode.from(pager.getPage(startPage), rowSize);
         this.pager = pager;
         this.startPage = startPage;
-        this.rowSize = rowSize;
-        this.numRows = numRows;
-        this.rowNumber = rowNumber;
-        endOfTable = (numRows == 0);
+        endOfTable = (leafNode.getNumCells() == 0);
     }
 
-    public void tableEnd() {
-        rowNumber = numRows;
-        endOfTable = true;
-    }
-
-    public CursorValue value() {
-        PageNumberAndOffset pageNumberAndOffset = getPageNumberAndOffset(rowNumber);
-        return new CursorValue(pager.getPage(pageNumberAndOffset.pageNumber()), pageNumberAndOffset.pageNumber(), pageNumberAndOffset.rowOffset());
+    public void insert(int key, byte[] rowBytes) {
+        LeafNode leafNode = seekToEnd();
+        leafNode.insertCell(cellIndex, key, rowBytes);
+        leafNode.setNumCells(cellIndex+1);
+        pager.markDirty(startPage);
     }
 
     public void advance() {
-        if (endOfTable) {
-            return;
-        }
-
-        rowNumber++;
-        if (rowNumber == numRows) {
+        cellIndex++;
+        if (cellIndex == leafNode.getNumCells()) {
             endOfTable = true;
         }
     }
 
-    public int maxRows() {
-        return ROWS_IN_START_PAGE + ((MAX_PAGES - startPage - 1) * ROWS_PER_PAGE);
+    private LeafNode seekToEnd() {
+        cellIndex = leafNode.getNumCells();
+        endOfTable = true;
+        return leafNode;
     }
 
-    private PageNumberAndOffset getPageNumberAndOffset(int rowNumber) {
-        int currentPageNumber;
-        int rowOffset;
-        if (rowNumber < ROWS_IN_START_PAGE) {
-            currentPageNumber = startPage;
-            rowOffset = TABLE_ROW_START_OFFSET + (rowNumber * rowSize);
-        } else {
-            int adjusted = rowNumber - ROWS_IN_START_PAGE;
-            currentPageNumber = startPage + 1 + (adjusted / ROWS_PER_PAGE);
-            rowOffset = (adjusted % ROWS_PER_PAGE) * rowSize;
-        }
-        return new PageNumberAndOffset(currentPageNumber, rowOffset);
+    public int getKey() {
+        return leafNode.getKey(cellIndex);
     }
 
-    private record PageNumberAndOffset(int pageNumber, int rowOffset) {
+    public byte[] getValue() {
+        return leafNode.getValue(cellIndex);
     }
 
 }

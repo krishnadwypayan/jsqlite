@@ -15,14 +15,13 @@ class RowSerializerTest {
         Column name = new Column("name", ColumnType.CHAR, 32, false);
         RowSerializer serializer = new RowSerializer(List.of(id, name));
 
-        byte[] page = new byte[4096];
         List<ColumnValue> row = List.of(
                 new ColumnValue(id, 42),
                 new ColumnValue(name, "alice")
         );
-        serializer.serialize(row, page, 0);
+        byte[] rowBytes = serializer.serialize(row);
 
-        List<ColumnValue> result = serializer.deserialize(page, 0);
+        List<ColumnValue> result = serializer.deserialize(rowBytes);
         assertEquals(2, result.size());
         assertEquals(42, result.get(0).value());
         assertEquals("alice", result.get(1).value());
@@ -33,10 +32,9 @@ class RowSerializerTest {
         Column name = new Column("name", ColumnType.CHAR, 32, false);
         RowSerializer serializer = new RowSerializer(List.of(name));
 
-        byte[] page = new byte[4096];
-        serializer.serialize(List.of(new ColumnValue(name, "hi")), page, 0);
+        byte[] rowBytes = serializer.serialize(List.of(new ColumnValue(name, "hi")));
 
-        List<ColumnValue> result = serializer.deserialize(page, 0);
+        List<ColumnValue> result = serializer.deserialize(rowBytes);
         assertEquals("hi", result.get(0).value());
     }
 
@@ -45,10 +43,9 @@ class RowSerializerTest {
         Column name = new Column("name", ColumnType.CHAR, 4, false);
         RowSerializer serializer = new RowSerializer(List.of(name));
 
-        byte[] page = new byte[4096];
-        serializer.serialize(List.of(new ColumnValue(name, "abcdefgh")), page, 0);
+        byte[] rowBytes = serializer.serialize(List.of(new ColumnValue(name, "abcdefgh")));
 
-        List<ColumnValue> result = serializer.deserialize(page, 0);
+        List<ColumnValue> result = serializer.deserialize(rowBytes);
         assertEquals("abcd", result.get(0).value());
     }
 
@@ -72,9 +69,8 @@ class RowSerializerTest {
         RowSerializer serializer = new RowSerializer(List.of(id));
 
         Column bogus = new Column("bogus", ColumnType.NUMBER, 4, false);
-        byte[] page = new byte[4096];
 
         assertThrows(IllegalArgumentException.class, () ->
-                serializer.serialize(List.of(new ColumnValue(bogus, 1)), page, 0));
+                serializer.serialize(List.of(new ColumnValue(bogus, 1))));
     }
 }

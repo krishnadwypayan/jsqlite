@@ -2,6 +2,7 @@ package command.handler;
 
 import command.CommandResult;
 import command.SqlCommandHandler;
+import org.apache.commons.collections4.CollectionUtils;
 import parser.SelectStatement;
 import parser.Statement;
 import store.Column;
@@ -42,8 +43,9 @@ public class SelectCommandHandler implements SqlCommandHandler {
         // Collect all rows, filtering to requested columns
         List<String> headers = queryColumns.stream().map(Column::name).toList();
         List<List<String>> rows = new ArrayList<>();
-        for (int i = 0; i < table.getNumRows(); i++) {
-            List<ColumnValue> fullRow = table.getRow(i);
+
+        List<List<ColumnValue>> allRows = table.getAllRows();
+        for (List<ColumnValue> fullRow : allRows) {
             Map<String, ColumnValue> rowMap = fullRow.stream()
                     .collect(Collectors.toMap(cv -> cv.column().name(), Function.identity()));
             List<String> filteredRow = queryColumns.stream()

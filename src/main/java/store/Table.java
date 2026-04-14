@@ -2,18 +2,15 @@ package store;
 
 import lombok.Getter;
 
-import java.nio.ByteBuffer;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class Table {
 
     private final Pager pager;
     private final RowSerializer rowSerializer;
     private final int startPage;
-
-    @Getter
-    private int numRows;
 
     @Getter
     private final List<Column> columns;
@@ -23,42 +20,32 @@ public class Table {
         this.startPage = startPage;
         this.columns = columns;
         this.rowSerializer = new RowSerializer(columns);
-        this.numRows = ByteBuffer.wrap(pager.getPage(startPage)).getInt();
     }
 
     public boolean insertRow(List<ColumnValue> row) {
-        Cursor cursor = new Cursor(pager, startPage, rowSerializer.getRowSize(), numRows, numRows);
-        if (numRows >= cursor.maxRows()) {
-            return false;
-        }
-
-        serializeRowData(row, cursor);
-        incrementNumRows();
+        Cursor cursor = new Cursor(pager, startPage, rowSerializer.getRowSize());
+        byte[] rowBytes = rowSerializer.serialize(row);
+        Optional<ColumnValue> key = row.stream().filter(columnValue -> columnValue.column().primaryKey()).findFirst();
+        key.ifPresent(columnValue -> cursor.insert((Integer) columnValue.value(), rowBytes));
         return true;
     }
 
-    private void serializeRowData(List<ColumnValue> row, Cursor cursor) {
-        cursor.tableEnd();
-        CursorValue cursorValue = cursor.value();
-        rowSerializer.serialize(row, cursorValue.page(), cursorValue.rowOffset());
-        pager.markDirty(cursorValue.pageNumber());
-    }
-
-    public List<ColumnValue> getRow(int rowNumber) {
-        if (rowNumber >= numRows) {
-            return Collections.emptyList();
+    public List<List<ColumnValue>> getAllRows() {
+        List<List<ColumnValue>> columnValues = new ArrayList<>();
+        Cursor cursor = new Cursor(pager, startPage, rowSerializer.getRowSize());
+        while (!cursor.isEndOfTable()) {
+            columnValues.add(rowSerializer.deserialize(cursor.getValue()));
+            cursor.advance();
         }
-
-        Cursor cursor = new Cursor(pager, startPage, rowSerializer.getRowSize(), numRows, rowNumber);
-        CursorValue cursorValue = cursor.value();
-        return rowSerializer.deserialize(cursorValue.page(), cursorValue.rowOffset());
+        return columnValues;
     }
 
-    private void incrementNumRows() {
-        numRows++;
-        byte[] page = pager.getPage(this.startPage);
-        rowSerializer.serializeRowCount(page, numRows);
-        pager.markDirty(this.startPage);
+    public List<ColumnValue> getRowByKey(int key) {
+        Cursor cursor = new Cursor(pager, startPage, rowSerializer.getRowSize());
+        while (!cursor.isEndOfTable() && cursor.getKey() != key) {
+            cursor.advance();
+        }
+        return cursor.isEndOfTable() ? null : rowSerializer.deserialize(cursor.getValue());
     }
 
 }
