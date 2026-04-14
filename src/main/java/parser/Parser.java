@@ -81,11 +81,25 @@ public class Parser {
                 size = Integer.parseInt(sizeToken.value());
                 expect(TokenType.RIGHT_PARENTHESIS, ")");
             }
-            columnDefinitions.add(new ColumnDefinition(columnName.value(), columnType.value(), size));
+
+            Token primaryKeyToken = peek();
+            boolean primaryKey = false;
+            if (primaryKeyToken != null && primaryKeyToken.tokenType() == TokenType.KEYWORD &&
+                    primaryKeyToken.value().equalsIgnoreCase("primary")) {
+                primaryKey = true;
+                expect(TokenType.KEYWORD, "primary");
+                expect(TokenType.KEYWORD, "key");
+            }
+            columnDefinitions.add(new ColumnDefinition(columnName.value(), columnType.value(), size, primaryKey));
 
         } while (hasComma());
         expect(TokenType.RIGHT_PARENTHESIS, ")");
         expectEnd();
+
+        if (columnDefinitions.stream().filter(ColumnDefinition::primaryKey).count() > 1) {
+            throw new ParserException("Table can have a single primary key");
+        }
+
         return new CreateTableStatement(tableNameToken.value(), columnDefinitions);
     }
 

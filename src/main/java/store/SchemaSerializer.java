@@ -29,6 +29,7 @@ public class SchemaSerializer {
                 byteBuffer.put(column.name().getBytes(StandardCharsets.UTF_8));
                 byteBuffer.putInt(column.type().ordinal());
                 byteBuffer.putInt(column.size());
+                byteBuffer.putInt(column.primaryKey() ? 1 : 0);
             }
         }
     }
@@ -52,7 +53,8 @@ public class SchemaSerializer {
                 byteBuffer.get(columnNameBytes);
                 int columnTypeOrdinal = byteBuffer.getInt();
                 int columnSize = byteBuffer.getInt();
-                columns.add(new Column(new String(columnNameBytes, StandardCharsets.UTF_8), ColumnType.values()[columnTypeOrdinal], columnSize));
+                boolean primaryKey = byteBuffer.getInt() == 1;
+                columns.add(new Column(new String(columnNameBytes, StandardCharsets.UTF_8), ColumnType.values()[columnTypeOrdinal], columnSize, primaryKey));
             }
             tableMetadataList.add(new TableMetadata(new String(tableNameBytes, StandardCharsets.UTF_8), startPage, columns));
         }

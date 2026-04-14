@@ -21,13 +21,13 @@ class ParserTest {
 
     @Test
     void parseCreateTable() {
-        Statement stmt = parse("create table users (id number, name char(32))");
+        Statement stmt = parse("create table users (id number primary key, name char(32))");
         assertInstanceOf(CreateTableStatement.class, stmt);
         CreateTableStatement create = (CreateTableStatement) stmt;
         assertEquals("users", create.tableName());
         assertEquals(2, create.columnDefinitions().size());
-        assertEquals(new ColumnDefinition("id", "number", 0), create.columnDefinitions().get(0));
-        assertEquals(new ColumnDefinition("name", "char", 32), create.columnDefinitions().get(1));
+        assertEquals(new ColumnDefinition("id", "number", 0, true), create.columnDefinitions().get(0));
+        assertEquals(new ColumnDefinition("name", "char", 32, false), create.columnDefinitions().get(1));
     }
 
     @Test
@@ -35,8 +35,8 @@ class ParserTest {
         Statement stmt = parse("create table posts (title varchar(255), body varchar(1000))");
         CreateTableStatement create = (CreateTableStatement) stmt;
         assertEquals("posts", create.tableName());
-        assertEquals(new ColumnDefinition("title", "varchar", 255), create.columnDefinitions().get(0));
-        assertEquals(new ColumnDefinition("body", "varchar", 1000), create.columnDefinitions().get(1));
+        assertEquals(new ColumnDefinition("title", "varchar", 255, false), create.columnDefinitions().get(0));
+        assertEquals(new ColumnDefinition("body", "varchar", 1000, false), create.columnDefinitions().get(1));
     }
 
     @Test
@@ -52,7 +52,21 @@ class ParserTest {
         Statement stmt = parse("create table users (id number, name char(32), age number)");
         CreateTableStatement create = (CreateTableStatement) stmt;
         assertEquals(3, create.columnDefinitions().size());
-        assertEquals(new ColumnDefinition("age", "number", 0), create.columnDefinitions().get(2));
+        assertEquals(new ColumnDefinition("age", "number", 0, false), create.columnDefinitions().get(2));
+    }
+
+    @Test
+    void parseCreateTableMultiplePrimaryKeysThrows() {
+        assertThrows(ParserException.class,
+                () -> parse("create table users (id number primary key, name char(32) primary key)"));
+    }
+
+    @Test
+    void parseCreateTablePrimaryKeyOnNonFirstColumn() {
+        Statement stmt = parse("create table users (name char(32), id number primary key)");
+        CreateTableStatement create = (CreateTableStatement) stmt;
+        assertEquals(new ColumnDefinition("name", "char", 32, false), create.columnDefinitions().get(0));
+        assertEquals(new ColumnDefinition("id", "number", 0, true), create.columnDefinitions().get(1));
     }
 
     // --- INSERT ---

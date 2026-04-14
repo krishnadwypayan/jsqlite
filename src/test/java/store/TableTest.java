@@ -12,8 +12,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TableTest {
 
-    private final Column id = new Column("id", ColumnType.NUMBER, 4);
-    private final Column name = new Column("name", ColumnType.CHAR, 32);
+    private final Column id = new Column("id", ColumnType.NUMBER, 4, true);
+    private final Column name = new Column("name", ColumnType.CHAR, 32, false);
     private final List<Column> columns = List.of(id, name);
     private File tempFile;
     private Pager pager;
@@ -63,7 +63,7 @@ class TableTest {
     @Test
     void insertWhenFullReturnsFalse() {
         // Use a large row to reduce max capacity: row size = 4 + 4092 = 4096 => 1 row per page
-        Column big = new Column("big", ColumnType.CHAR, 4092);
+        Column big = new Column("big", ColumnType.CHAR, 4092, false);
         Table table = new Table(pager, 1, List.of(id, big));
         // 1 row per page * 1000 pages = 1000 rows max
         for (int i = 0; i < 998; i++) {

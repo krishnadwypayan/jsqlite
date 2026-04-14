@@ -18,7 +18,9 @@ public enum Keyword {
     VARCHAR,
     VALUES,
     FROM,
-    WHERE
+    WHERE,
+    PRIMARY,
+    KEY
     ;
 
     private static final Map<String, Keyword> LOOKUP = Arrays.stream(Keyword.values())

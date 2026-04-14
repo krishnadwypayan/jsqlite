@@ -11,8 +11,8 @@ class RowSerializerTest {
 
     @Test
     void serializeAndDeserializeRoundTrip() {
-        Column id = new Column("id", ColumnType.NUMBER, 4);
-        Column name = new Column("name", ColumnType.CHAR, 32);
+        Column id = new Column("id", ColumnType.NUMBER, 4, true);
+        Column name = new Column("name", ColumnType.CHAR, 32, false);
         RowSerializer serializer = new RowSerializer(List.of(id, name));
 
         byte[] page = new byte[4096];
@@ -30,7 +30,7 @@ class RowSerializerTest {
 
     @Test
     void shortStringIsPaddedToFixedSize() {
-        Column name = new Column("name", ColumnType.CHAR, 32);
+        Column name = new Column("name", ColumnType.CHAR, 32, false);
         RowSerializer serializer = new RowSerializer(List.of(name));
 
         byte[] page = new byte[4096];
@@ -42,7 +42,7 @@ class RowSerializerTest {
 
     @Test
     void longStringIsTruncated() {
-        Column name = new Column("name", ColumnType.CHAR, 4);
+        Column name = new Column("name", ColumnType.CHAR, 4, false);
         RowSerializer serializer = new RowSerializer(List.of(name));
 
         byte[] page = new byte[4096];
@@ -54,9 +54,9 @@ class RowSerializerTest {
 
     @Test
     void offsetsAreCorrect() {
-        Column id = new Column("id", ColumnType.NUMBER, 4);
-        Column name = new Column("name", ColumnType.CHAR, 32);
-        Column age = new Column("age", ColumnType.NUMBER, 4);
+        Column id = new Column("id", ColumnType.NUMBER, 4, true);
+        Column name = new Column("name", ColumnType.CHAR, 32, false);
+        Column age = new Column("age", ColumnType.NUMBER, 4, false);
         RowSerializer serializer = new RowSerializer(List.of(id, name, age));
 
         Map<String, Integer> offsets = serializer.getOffsets();
@@ -68,10 +68,10 @@ class RowSerializerTest {
 
     @Test
     void invalidColumnNameThrows() {
-        Column id = new Column("id", ColumnType.NUMBER, 4);
+        Column id = new Column("id", ColumnType.NUMBER, 4, false);
         RowSerializer serializer = new RowSerializer(List.of(id));
 
-        Column bogus = new Column("bogus", ColumnType.NUMBER, 4);
+        Column bogus = new Column("bogus", ColumnType.NUMBER, 4, false);
         byte[] page = new byte[4096];
 
         assertThrows(IllegalArgumentException.class, () ->

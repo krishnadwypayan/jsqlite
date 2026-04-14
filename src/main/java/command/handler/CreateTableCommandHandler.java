@@ -31,7 +31,8 @@ public class CreateTableCommandHandler implements SqlCommandHandler {
                                 columnDefinition.name(), columnDefinition.type()));
                     }
                     return new Column(columnDefinition.name(), columnType.get(),
-                            columnDefinition.size() == 0 ? columnType.get().getSize() : columnDefinition.size());
+                            columnDefinition.size() == 0 ? columnType.get().getSize() : columnDefinition.size(),
+                            columnDefinition.primaryKey());
                 }).toList();
         database.createTable(createTableStatement.tableName(), columns);
 
