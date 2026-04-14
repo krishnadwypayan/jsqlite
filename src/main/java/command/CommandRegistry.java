@@ -12,6 +12,7 @@ import parser.Parser;
 import parser.SelectStatement;
 import parser.Statement;
 import store.Database;
+import store.DatabaseConstants;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -28,8 +29,12 @@ public class CommandRegistry {
     private final CreateTableCommandHandler createTableCommandHandler;
 
     public CommandRegistry() {
+        this(DatabaseConstants.DATABASE_FILE_PATH);
+    }
+
+    public CommandRegistry(String databaseFilePath) {
         lexer = new Lexer();
-        database = new Database();
+        database = new Database(databaseFilePath);
         metaCommands.put(MetaCommand.EXIT, new ExitCommandHandler());
         selectCommandHandler = new SelectCommandHandler(database);
         insertCommandHandler = new InsertCommandHandler(database);

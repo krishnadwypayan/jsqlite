@@ -1,19 +1,31 @@
 package command;
 
 import command.handler.CommandHandlerExecutionException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import parser.ParserException;
+
+import java.io.File;
+import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class CommandRegistryTest {
 
     private CommandRegistry registry;
+    private File tempFile;
 
     @BeforeEach
-    void setUp() {
-        registry = new CommandRegistry();
+    void setUp() throws IOException {
+        tempFile = File.createTempFile("jsqlite-test", ".db");
+        registry = new CommandRegistry(tempFile.getAbsolutePath());
+    }
+
+    @AfterEach
+    void tearDown() {
+        registry.close();
+        tempFile.delete();
     }
 
     // --- DISPATCH BASICS ---
@@ -130,5 +142,40 @@ class CommandRegistryTest {
     void invalidSqlThrows() {
         assertThrows(ParserException.class,
                 () -> registry.dispatch("gibberish"));
+    }
+
+    // --- PERSISTENCE ---
+
+    @Test
+    void dataPersistsAcrossRestart() {
+        registry.dispatch("create table users (id number, name char(32))");
+        registry.dispatch("insert into users values (1, 'alice')");
+        registry.dispatch("insert into users values (2, 'bob')");
+        registry.close();
+
+        registry = new CommandRegistry(tempFile.getAbsolutePath());
+        assertEquals(CommandResult.PREPARE_SUCCESS, registry.dispatch("select * from users"));
+    }
+
+    @Test
+    void multipleTablesPersistAcrossRestart() {
+        registry.dispatch("create table users (id number, name char(32))");
+        registry.dispatch("create table posts (id number, title varchar(100))");
+        registry.dispatch("insert into users values (1, 'alice')");
+        registry.dispatch("insert into posts values (1, 'hello world')");
+        registry.close();
+
+        registry = new CommandRegistry(tempFile.getAbsolutePath());
+        assertEquals(CommandResult.PREPARE_SUCCESS, registry.dispatch("select * from users"));
+        assertEquals(CommandResult.PREPARE_SUCCESS, registry.dispatch("select * from posts"));
+    }
+
+    @Test
+    void emptyTablePersistsAcrossRestart() {
+        registry.dispatch("create table users (id number, name char(32))");
+        registry.close();
+
+        registry = new CommandRegistry(tempFile.getAbsolutePath());
+        assertEquals(CommandResult.PREPARE_SUCCESS, registry.dispatch("select * from users"));
     }
 }

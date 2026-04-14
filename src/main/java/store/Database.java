@@ -1,13 +1,10 @@
 package store;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class Database {
-
-    private static final String DATABASE_FILE_PATH = "data/jsqlite.db";
 
     private final Map<String, Table> tableMap;
     private final Pager pager;
@@ -17,9 +14,9 @@ public class Database {
     private int nextFreePage = 1;
     private static final int PAGES_PER_TABLE = 100;
 
-    public Database() {
+    public Database(String databaseFilePath) {
         tableMap = new HashMap<>();
-        pager = new Pager(DATABASE_FILE_PATH);
+        pager = new Pager(databaseFilePath);
         schemaSerializer = new SchemaSerializer();
         init();
     }
