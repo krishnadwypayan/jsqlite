@@ -22,7 +22,12 @@ src/main/java/
     Statement (sealed), CreateTableStatement, InsertStatement,
     SelectStatement, ColumnDefinition
   store/                        # Storage layer
-    Table, RowSerializer, Column, ColumnType, ColumnValue, Database
+    Database, Table, Cursor, CursorValue
+    Pager, RowSerializer, SchemaSerializer, TableMetadata
+    Column, ColumnType, ColumnValue
+    DatabaseConstants, StorageException
+  btree/                        # B-tree node format
+    Node (abstract), LeafNode, NodeType
   command/                      # Command dispatch
     CommandRegistry, CommandHandler, MetaCommand, CommandResult,
     SqlCommandHandler, MetaCommandHandler
@@ -38,10 +43,11 @@ src/test/java/
 
 ## Conventions
 
-- Java 17+, Gradle build
+- Java 21+ (preview features), Gradle build
 - Lombok for boilerplate reduction
 - JUnit 5 for tests
-- Package-per-layer: `lexer`, `parser`, `store`, `command`
+- Package-per-layer: `lexer`, `parser`, `store`, `btree`, `command`
+- Page bytes are the single source of truth (no duplicate state in Java fields)
 
 ## Mentoring Context
 
@@ -55,17 +61,21 @@ This is a mentored learning project. The developer is a senior engineer learning
 
 ## Current Progress
 
-- REPL loop (JSQLite.java) with EOF handling
-- Lexer: tokenizes SQL with string literals, keywords, identifiers, numbers, star
+- REPL loop with EOF handling, graceful error handling, shutdown hook
+- Lexer: string literals (with SQL '' and backslash escaping), keywords, identifiers, numbers, star
 - Parser: recursive descent producing sealed Statement AST nodes
-- Storage layer: Table with fixed-size row serialization, Database wrapper
-- Command dispatch: pattern matching on Statement type (SqlCommand enum removed)
+- Primary key support: parsing, validation (one per table, NUMBER type only)
+- Storage: Pager (page cache, dirty tracking, flush to disk), Cursor abstraction
+- Persistence: single-file DB (data/jsqlite.db), schema on page 0, numRows in table start page header
+- Command dispatch: pattern matching on sealed Statement type
 - Handlers: CREATE TABLE, INSERT INTO ... VALUES, SELECT (* and named columns)
 - Pretty-printed table output with borders
-- Tests: LexerTest, ParserTest, CommandRegistryTest, RowSerializerTest, TableTest
+- B-tree: leaf node format (Node/LeafNode classes, create/from factory methods)
+- Tests: LexerTest, ParserTest, CommandRegistryTest (incl. persistence round-trips), RowSerializerTest, TableTest
 
 ## Next Steps
 
-- WHERE clause for SELECT
-- B-tree storage engine
-- Error handling (graceful errors in REPL instead of stack traces)
+- Wire B-tree leaf node into Table/Cursor (replace flat page layout)
+- Binary search and duplicate key detection (Part 9)
+- Leaf node splitting (Part 10)
+- Internal nodes and multi-level B-tree (Parts 11-14)
