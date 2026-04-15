@@ -59,11 +59,34 @@ public class LeafNode extends Node {
     }
 
     public void insertCell(int cellIndex, int key, byte[] value) {
-        ByteBuffer.wrap(page, getCellOffset(cellIndex), INT_BYTES + rowSize).putInt(key).put(value);
+        int numCells = getNumCells();
+        int cellSize = INT_BYTES + rowSize;
+
+        // shift cells right by one position
+        int srcOffset = getCellOffset(cellIndex);
+        int destOffset = getCellOffset(cellIndex + 1);
+        int bytesToMove = (numCells - cellIndex) * cellSize;
+        System.arraycopy(page, srcOffset, page, destOffset, bytesToMove);
+
+        // write new cell
+        ByteBuffer.wrap(page, srcOffset, cellSize).putInt(key).put(value);
     }
 
     private int getCellOffset(int cellIndex) {
         return CELLS_START_OFFSET + (cellIndex * (INT_BYTES + rowSize));
+    }
+
+    public int findCell(int key) {
+        int low = 0, high = getNumCells();
+        while (low < high) {
+            int mid = low + (high - low)/2;
+            if (getKey(mid) < key) {
+                low = mid + 1;
+            } else {
+                high = mid;
+            }
+        }
+        return low;
     }
 
 }

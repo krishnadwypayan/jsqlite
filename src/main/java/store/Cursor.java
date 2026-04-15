@@ -21,9 +21,15 @@ public class Cursor {
     }
 
     public void insert(int key, byte[] rowBytes) {
-        LeafNode leafNode = seekToEnd();
+        int cellIndex = leafNode.findCell(key);
+
+        // check duplicate
+        if (cellIndex < leafNode.getNumCells() && leafNode.getKey(cellIndex) == key) {
+            throw new StorageException("Duplicate key: " + key);
+        }
+
         leafNode.insertCell(cellIndex, key, rowBytes);
-        leafNode.setNumCells(cellIndex+1);
+        leafNode.setNumCells(leafNode.getNumCells() + 1);
         pager.markDirty(startPage);
     }
 
@@ -34,10 +40,9 @@ public class Cursor {
         }
     }
 
-    private LeafNode seekToEnd() {
+    private void seekToEnd() {
         cellIndex = leafNode.getNumCells();
         endOfTable = true;
-        return leafNode;
     }
 
     public int getKey() {

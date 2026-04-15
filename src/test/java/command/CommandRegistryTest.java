@@ -144,6 +144,14 @@ class CommandRegistryTest {
                 () -> registry.dispatch("gibberish"));
     }
 
+    @Test
+    void duplicateKeyThrows() {
+        registry.dispatch("create table users (id number primary key, name char(32))");
+        registry.dispatch("insert into users values (1, 'alice')");
+        assertThrows(Exception.class,
+                () -> registry.dispatch("insert into users values (1, 'bob')"));
+    }
+
     // --- PERSISTENCE ---
 
     @Test

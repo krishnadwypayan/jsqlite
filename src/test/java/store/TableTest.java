@@ -89,4 +89,48 @@ class TableTest {
         List<List<ColumnValue>> rows = table.getAllRows();
         assertTrue(rows.isEmpty());
     }
+
+    @Test
+    void insertedRowsAreSortedByKey() {
+        Table table = new Table(pager, 1, columns);
+        table.insertRow(makeRow(3, "charlie"));
+        table.insertRow(makeRow(1, "alice"));
+        table.insertRow(makeRow(2, "bob"));
+
+        List<List<ColumnValue>> rows = table.getAllRows();
+        assertEquals(3, rows.size());
+        assertEquals(1, rows.get(0).get(0).value());
+        assertEquals("alice", rows.get(0).get(1).value());
+        assertEquals(2, rows.get(1).get(0).value());
+        assertEquals("bob", rows.get(1).get(1).value());
+        assertEquals(3, rows.get(2).get(0).value());
+        assertEquals("charlie", rows.get(2).get(1).value());
+    }
+
+    @Test
+    void duplicateKeyThrows() {
+        Table table = new Table(pager, 1, columns);
+        table.insertRow(makeRow(1, "alice"));
+        assertThrows(StorageException.class, () -> table.insertRow(makeRow(1, "bob")));
+    }
+
+    @Test
+    void getRowByKeyAfterOutOfOrderInserts() {
+        Table table = new Table(pager, 1, columns);
+        table.insertRow(makeRow(5, "eve"));
+        table.insertRow(makeRow(2, "bob"));
+        table.insertRow(makeRow(8, "heidi"));
+        table.insertRow(makeRow(1, "alice"));
+
+        List<ColumnValue> row = table.getRowByKey(2);
+        assertNotNull(row);
+        assertEquals(2, row.get(0).value());
+        assertEquals("bob", row.get(1).value());
+
+        row = table.getRowByKey(8);
+        assertNotNull(row);
+        assertEquals("heidi", row.get(1).value());
+
+        assertNull(table.getRowByKey(99));
+    }
 }

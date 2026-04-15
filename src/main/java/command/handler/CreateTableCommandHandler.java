@@ -3,7 +3,6 @@ package command.handler;
 import command.CommandResult;
 import command.SqlCommandHandler;
 import parser.CreateTableStatement;
-import parser.ParserException;
 import parser.Statement;
 import store.Column;
 import store.ColumnType;
