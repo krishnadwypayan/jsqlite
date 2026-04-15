@@ -1,5 +1,6 @@
 package store;
 
+import btree.LeafNode;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -15,11 +16,14 @@ public class Table {
     @Getter
     private final List<Column> columns;
 
-    public Table(Pager pager, int startPage, List<Column> columns) {
+    public Table(Pager pager, int startPage, List<Column> columns, boolean isNew) {
         this.pager = pager;
         this.startPage = startPage;
         this.columns = columns;
         this.rowSerializer = new RowSerializer(columns);
+        if (isNew) {
+            LeafNode.create(pager.getPage(startPage), rowSerializer.getRowSize());
+        }
     }
 
     public boolean insertRow(List<ColumnValue> row) {

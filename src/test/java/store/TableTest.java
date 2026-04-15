@@ -36,7 +36,7 @@ class TableTest {
 
     @Test
     void insertAndReadBackAllRows() {
-        Table table = new Table(pager, 1, columns);
+        Table table = new Table(pager, 1, columns, true);
         assertTrue(table.insertRow(makeRow(1, "alice")));
         assertTrue(table.insertRow(makeRow(2, "bob")));
 
@@ -50,7 +50,7 @@ class TableTest {
 
     @Test
     void getRowByKey() {
-        Table table = new Table(pager, 1, columns);
+        Table table = new Table(pager, 1, columns, true);
         table.insertRow(makeRow(1, "alice"));
         table.insertRow(makeRow(2, "bob"));
 
@@ -62,7 +62,7 @@ class TableTest {
 
     @Test
     void getRowByKeyNotFound() {
-        Table table = new Table(pager, 1, columns);
+        Table table = new Table(pager, 1, columns, true);
         table.insertRow(makeRow(1, "alice"));
 
         assertNull(table.getRowByKey(99));
@@ -70,7 +70,7 @@ class TableTest {
 
     @Test
     void insertMultipleRows() {
-        Table table = new Table(pager, 1, columns);
+        Table table = new Table(pager, 1, columns, true);
         int rowsToInsert = 50;
         for (int i = 0; i < rowsToInsert; i++) {
             assertTrue(table.insertRow(makeRow(i, "user" + i)));
@@ -85,14 +85,14 @@ class TableTest {
 
     @Test
     void emptyTableReturnsNoRows() {
-        Table table = new Table(pager, 1, columns);
+        Table table = new Table(pager, 1, columns, true);
         List<List<ColumnValue>> rows = table.getAllRows();
         assertTrue(rows.isEmpty());
     }
 
     @Test
     void insertedRowsAreSortedByKey() {
-        Table table = new Table(pager, 1, columns);
+        Table table = new Table(pager, 1, columns, true);
         table.insertRow(makeRow(3, "charlie"));
         table.insertRow(makeRow(1, "alice"));
         table.insertRow(makeRow(2, "bob"));
@@ -109,14 +109,14 @@ class TableTest {
 
     @Test
     void duplicateKeyThrows() {
-        Table table = new Table(pager, 1, columns);
+        Table table = new Table(pager, 1, columns, true);
         table.insertRow(makeRow(1, "alice"));
         assertThrows(StorageException.class, () -> table.insertRow(makeRow(1, "bob")));
     }
 
     @Test
     void getRowByKeyAfterOutOfOrderInserts() {
-        Table table = new Table(pager, 1, columns);
+        Table table = new Table(pager, 1, columns, true);
         table.insertRow(makeRow(5, "eve"));
         table.insertRow(makeRow(2, "bob"));
         table.insertRow(makeRow(8, "heidi"));

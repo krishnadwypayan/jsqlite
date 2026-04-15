@@ -26,7 +26,7 @@ public class Database {
         tableMetadataList = schemaSerializer.deserialize(schemaPage);
 
         for (TableMetadata tableMetadata : tableMetadataList) {
-            tableMap.put(tableMetadata.tableName(), new Table(pager, tableMetadata.startPage(), tableMetadata.columns()));
+            tableMap.put(tableMetadata.tableName(), new Table(pager, tableMetadata.startPage(), tableMetadata.columns(), false));
             nextFreePage = tableMetadata.startPage() + PAGES_PER_TABLE;
         }
     }
@@ -34,7 +34,7 @@ public class Database {
     public void createTable(String name, List<Column> columns) {
         int startPage = getNextFreePage();
         tableMetadataList.add(new TableMetadata(name, startPage, columns));
-        tableMap.put(name, new Table(pager, startPage, columns));
+        tableMap.put(name, new Table(pager, startPage, columns, true));
         schemaSerializer.serialize(tableMetadataList, pager.getPage(0));
         pager.markDirty(0);
     }
