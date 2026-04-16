@@ -10,9 +10,9 @@ import java.nio.ByteBuffer;
  */
 public abstract class Node {
 
-    protected static final int INT_BYTES = 4;
+    public static final int INT_BYTES = 4;
     private static final int PARENT_POINTER_OFFSET = 2;
-    private static final int NODE_HEADER_BYTES = 6;
+    protected static final int COMMON_HEADER_END_OFFSET = 6;
 
     protected final byte[] page;
 
@@ -20,27 +20,27 @@ public abstract class Node {
         this.page = page;
     }
 
-    protected NodeType getNodeType() {
+    public NodeType getNodeType() {
         return NodeType.values()[page[0]];
     }
 
-    protected void setNodeType(NodeType nodeType) {
+    public void setNodeType(NodeType nodeType) {
         page[0] = (byte) nodeType.ordinal();
     }
 
-    protected boolean isRoot() {
+    public boolean isRoot() {
         return page[1] == 1;
     }
 
-    protected void setIsRoot(boolean isRoot) {
+    public void setIsRoot(boolean isRoot) {
         page[1] = (byte) (isRoot ? 1 : 0);
     }
 
-    protected int getParentPointer() {
+    public int getParentPointer() {
         return ByteBuffer.wrap(page, PARENT_POINTER_OFFSET, INT_BYTES).getInt();
     }
 
-    protected void setParentPointer(int parentPointer) {
+    public void setParentPointer(int parentPointer) {
         ByteBuffer.wrap(page, PARENT_POINTER_OFFSET, INT_BYTES).putInt(parentPointer);
     }
 

@@ -11,15 +11,21 @@ public class Pager {
     private final RandomAccessFile randomAccessFile;
     private final byte[][] pages;
     private final boolean[] dirtyPages;
+    private int nextFreePage;
 
     public Pager(String databaseFilePath) {
         try {
             randomAccessFile = new RandomAccessFile(databaseFilePath, "rw");
+            nextFreePage = Math.max((int) (randomAccessFile.length() / PAGE_SIZE), 1);
         } catch (IOException e) {
             throw new StorageException("Failed to open database file: " + databaseFilePath, e);
         }
         pages = new byte[MAX_PAGES][];
         dirtyPages = new boolean[MAX_PAGES];
+    }
+
+    public int allocatePage() {
+        return nextFreePage++;
     }
 
     public byte[] getPage(int pageNumber) {

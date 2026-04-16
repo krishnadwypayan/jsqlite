@@ -11,9 +11,6 @@ public class Database {
     private final SchemaSerializer schemaSerializer;
     private List<TableMetadata> tableMetadataList;
 
-    private int nextFreePage = 1;
-    private static final int PAGES_PER_TABLE = 100;
-
     public Database(String databaseFilePath) {
         tableMap = new HashMap<>();
         pager = new Pager(databaseFilePath);
@@ -27,12 +24,11 @@ public class Database {
 
         for (TableMetadata tableMetadata : tableMetadataList) {
             tableMap.put(tableMetadata.tableName(), new Table(pager, tableMetadata.startPage(), tableMetadata.columns(), false));
-            nextFreePage = tableMetadata.startPage() + PAGES_PER_TABLE;
         }
     }
 
     public void createTable(String name, List<Column> columns) {
-        int startPage = getNextFreePage();
+        int startPage = pager.allocatePage();
         tableMetadataList.add(new TableMetadata(name, startPage, columns));
         tableMap.put(name, new Table(pager, startPage, columns, true));
         schemaSerializer.serialize(tableMetadataList, pager.getPage(0));
@@ -47,9 +43,4 @@ public class Database {
         pager.close();
     }
 
-    private int getNextFreePage() {
-        int retVal = nextFreePage;
-        nextFreePage += PAGES_PER_TABLE;
-        return retVal;
-    }
 }

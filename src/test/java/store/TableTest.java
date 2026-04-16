@@ -36,7 +36,7 @@ class TableTest {
 
     @Test
     void insertAndReadBackAllRows() {
-        Table table = new Table(pager, 1, columns, true);
+        Table table = new Table(pager, pager.allocatePage(), columns, true);
         assertTrue(table.insertRow(makeRow(1, "alice")));
         assertTrue(table.insertRow(makeRow(2, "bob")));
 
@@ -50,7 +50,7 @@ class TableTest {
 
     @Test
     void getRowByKey() {
-        Table table = new Table(pager, 1, columns, true);
+        Table table = new Table(pager, pager.allocatePage(), columns, true);
         table.insertRow(makeRow(1, "alice"));
         table.insertRow(makeRow(2, "bob"));
 
@@ -62,7 +62,7 @@ class TableTest {
 
     @Test
     void getRowByKeyNotFound() {
-        Table table = new Table(pager, 1, columns, true);
+        Table table = new Table(pager, pager.allocatePage(), columns, true);
         table.insertRow(makeRow(1, "alice"));
 
         assertNull(table.getRowByKey(99));
@@ -70,7 +70,7 @@ class TableTest {
 
     @Test
     void insertMultipleRows() {
-        Table table = new Table(pager, 1, columns, true);
+        Table table = new Table(pager, pager.allocatePage(), columns, true);
         int rowsToInsert = 50;
         for (int i = 0; i < rowsToInsert; i++) {
             assertTrue(table.insertRow(makeRow(i, "user" + i)));
@@ -85,14 +85,14 @@ class TableTest {
 
     @Test
     void emptyTableReturnsNoRows() {
-        Table table = new Table(pager, 1, columns, true);
+        Table table = new Table(pager, pager.allocatePage(), columns, true);
         List<List<ColumnValue>> rows = table.getAllRows();
         assertTrue(rows.isEmpty());
     }
 
     @Test
     void insertedRowsAreSortedByKey() {
-        Table table = new Table(pager, 1, columns, true);
+        Table table = new Table(pager, pager.allocatePage(), columns, true);
         table.insertRow(makeRow(3, "charlie"));
         table.insertRow(makeRow(1, "alice"));
         table.insertRow(makeRow(2, "bob"));
@@ -109,14 +109,14 @@ class TableTest {
 
     @Test
     void duplicateKeyThrows() {
-        Table table = new Table(pager, 1, columns, true);
+        Table table = new Table(pager, pager.allocatePage(), columns, true);
         table.insertRow(makeRow(1, "alice"));
         assertThrows(StorageException.class, () -> table.insertRow(makeRow(1, "bob")));
     }
 
     @Test
     void getRowByKeyAfterOutOfOrderInserts() {
-        Table table = new Table(pager, 1, columns, true);
+        Table table = new Table(pager, pager.allocatePage(), columns, true);
         table.insertRow(makeRow(5, "eve"));
         table.insertRow(makeRow(2, "bob"));
         table.insertRow(makeRow(8, "heidi"));
@@ -132,5 +132,50 @@ class TableTest {
         assertEquals("heidi", row.get(1).value());
 
         assertNull(table.getRowByKey(99));
+    }
+
+    @Test
+    void splitLeafNodeWhenFull() {
+        int startPage = pager.allocatePage();
+
+        // row size = 4 (id) + 32 (name) = 36, cell size = 40
+        // maxCells = (4096 - 10) / 40 = 102
+        Table table = new Table(pager, startPage, columns, true);
+        int maxCells = 102;
+
+        // fill the leaf node to capacity
+        for (int i = 0; i < maxCells; i++) {
+            assertTrue(table.insertRow(makeRow(i, "user" + i)));
+        }
+
+        // this insert should trigger a split
+        assertTrue(table.insertRow(makeRow(maxCells, "user" + maxCells)));
+
+        // all rows should still be readable
+        List<List<ColumnValue>> allRows = table.getAllRows();
+        assertEquals(maxCells + 1, allRows.size());
+
+        // verify first, middle, and last
+        assertEquals(0, allRows.get(0).get(0).value());
+        assertEquals(50, allRows.get(50).get(0).value());
+        assertEquals(maxCells, allRows.get(maxCells).get(0).value());
+    }
+
+    @Test
+    void splitLeafNodeWithOutOfOrderKeys() {
+        int startPage = pager.allocatePage();
+        Table table = new Table(pager, startPage, columns, true);
+        int maxCells = 102;
+
+        // insert in reverse order to stress sorted insertion + split
+        for (int i = maxCells; i >= 0; i--) {
+            assertTrue(table.insertRow(makeRow(i, "user" + i)));
+        }
+
+        // verify all rows readable and sorted
+        List<List<ColumnValue>> allRows = table.getAllRows();
+        assertEquals(maxCells + 1, allRows.size());
+        assertEquals(0, allRows.get(0).get(0).value());
+        assertEquals(maxCells, allRows.get(maxCells).get(0).value());
     }
 }

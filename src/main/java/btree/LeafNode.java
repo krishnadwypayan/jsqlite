@@ -1,6 +1,10 @@
 package btree;
 
+import lombok.Getter;
+
 import java.nio.ByteBuffer;
+
+import static store.DatabaseConstants.PAGE_SIZE;
 
 /**
  * Leaf node layout (per page):
@@ -8,8 +12,9 @@ import java.nio.ByteBuffer;
  *     node_type          1 byte
  *     is_root            1 byte
  *     parent_pointer     4 bytes
- *   [Leaf Header]       4 bytes
+ *   [Leaf Header]       8 bytes
  *     num_cells          4 bytes
+ *     next_leaf          4 bytes
  *   [Cell 0]
  *     key                4 bytes (primary key value)
  *     value              row_size bytes (serialized row)
@@ -18,16 +23,19 @@ import java.nio.ByteBuffer;
  */
 public class LeafNode extends Node {
 
-    private static final int LEAF_HEADER_START_OFFSET = 6;
-    private static final int CELLS_START_OFFSET = 10;
+    public static final int CELLS_START_OFFSET = 14;
 
     private final int rowSize;
+
+    @Getter
+    private final int maxCells;
 
     public static LeafNode create(byte[] page, int rowSize) {
         LeafNode leafNode = new LeafNode(page, rowSize);
         leafNode.setNodeType(NodeType.LEAF);
         leafNode.setIsRoot(true);
-        leafNode.setParentPointer(-1);
+        leafNode.setParentPointer(0);
+        leafNode.setNextLeaf(0);
         return leafNode;
     }
 
@@ -38,14 +46,23 @@ public class LeafNode extends Node {
     private LeafNode(byte[] page, int rowSize) {
         super(page);
         this.rowSize = rowSize;
+        this.maxCells = (PAGE_SIZE - CELLS_START_OFFSET)/(4 + rowSize);
     }
 
     public int getNumCells() {
-        return ByteBuffer.wrap(page, LEAF_HEADER_START_OFFSET, INT_BYTES).getInt();
+        return ByteBuffer.wrap(page, COMMON_HEADER_END_OFFSET, INT_BYTES).getInt();
     }
 
     public void setNumCells(int count) {
-        ByteBuffer.wrap(page, LEAF_HEADER_START_OFFSET, INT_BYTES).putInt(count);
+        ByteBuffer.wrap(page, COMMON_HEADER_END_OFFSET, INT_BYTES).putInt(count);
+    }
+
+    public int getNextLeaf() {
+        return ByteBuffer.wrap(page, COMMON_HEADER_END_OFFSET + INT_BYTES, INT_BYTES).getInt();
+    }
+
+    public void setNextLeaf(int count) {
+        ByteBuffer.wrap(page, COMMON_HEADER_END_OFFSET + INT_BYTES, INT_BYTES).putInt(count);
     }
 
     public int getKey(int cellIndex) {
@@ -72,7 +89,7 @@ public class LeafNode extends Node {
         ByteBuffer.wrap(page, srcOffset, cellSize).putInt(key).put(value);
     }
 
-    private int getCellOffset(int cellIndex) {
+    public int getCellOffset(int cellIndex) {
         return CELLS_START_OFFSET + (cellIndex * (INT_BYTES + rowSize));
     }
 
