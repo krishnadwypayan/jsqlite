@@ -65,17 +65,18 @@ This is a mentored learning project. The developer is a senior engineer learning
 - Lexer: string literals (with SQL '' and backslash escaping), keywords, identifiers, numbers, star
 - Parser: recursive descent producing sealed Statement AST nodes
 - Primary key support: parsing, validation (one per table, NUMBER type only)
-- Storage: Pager (page cache, dirty tracking, flush to disk), Cursor abstraction
-- Persistence: single-file DB (data/jsqlite.db), schema on page 0, numRows in table start page header
+- Storage: Pager (page cache, dirty tracking, global page allocator), Cursor (B-tree navigation)
+- Persistence: single-file DB (data/jsqlite.db), schema on page 0
 - Command dispatch: pattern matching on sealed Statement type
-- Handlers: CREATE TABLE, INSERT INTO ... VALUES, SELECT (* and named columns)
+- Handlers: CREATE TABLE (primary key required), INSERT INTO ... VALUES, SELECT (* and named columns)
 - Pretty-printed table output with borders
-- B-tree: leaf node format (Node/LeafNode classes, create/from factory methods)
-- Tests: LexerTest, ParserTest, CommandRegistryTest (incl. persistence round-trips), RowSerializerTest, TableTest
+- B-tree: LeafNode (sorted cells, binary search, sibling pointers), InternalNode (key-based child routing), leaf splitting with internal root creation, tree navigation for inserts
+- Tests: LexerTest, ParserTest, CommandRegistryTest (incl. persistence round-trips), RowSerializerTest, TableTest (incl. split tests)
 
 ## Next Steps
 
-- Wire B-tree leaf node into Table/Cursor (replace flat page layout)
-- Binary search and duplicate key detection (Part 9)
-- Leaf node splitting (Part 10)
-- Internal nodes and multi-level B-tree (Parts 11-14)
+- Update parent node after non-root leaf split (Part 13)
+- Internal node splitting (Part 14)
+- WHERE clause for SELECT
+- Auto-generated rowid for tables without explicit primary key
+- Primary key support for CHAR/VARCHAR columns

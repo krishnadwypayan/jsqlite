@@ -35,7 +35,7 @@ Data is stored in `data/jsqlite.db`.
 | `lexer`   | SQL lexer, tokens, keywords                          |
 | `parser`  | Recursive descent parser, sealed AST nodes           |
 | `store`   | Tables, rows, columns, Pager, Cursor, schema, DB     |
-| `btree`   | B-tree node format (Node, LeafNode, NodeType)        |
+| `btree`   | B-tree nodes (Node, LeafNode, InternalNode)          |
 | `command` | Command registry, handlers, dispatch                 |
 
 ## Status
@@ -48,8 +48,11 @@ Data is stored in `data/jsqlite.db`.
 - [x] Disk persistence (Pager, SchemaSerializer, shutdown hook)
 - [x] Primary key support (parsing + validation)
 - [x] Pretty-printed SELECT output with borders
-- [x] B-tree leaf node format
-- [ ] Wire B-tree into storage layer
-- [ ] Binary search and duplicate key detection
-- [ ] Leaf node splitting
-- [ ] Internal nodes and multi-level B-tree
+- [x] B-tree leaf node format with sorted insertion
+- [x] Binary search and duplicate key detection
+- [x] Leaf node splitting with internal root creation
+- [x] Sibling pointers for sequential leaf traversal
+- [x] Tree navigation for inserts (key-based child lookup)
+- [ ] Parent node updates after non-root split (Part 13)
+- [ ] Internal node splitting (Part 14)
+- [ ] WHERE clause for SELECT
