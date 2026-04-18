@@ -68,7 +68,31 @@ public class InternalNode extends Node {
         ByteBuffer.wrap(page, CELL_START_OFFSET + (cellIndex * CELL_SIZE) + INT_BYTES, INT_BYTES).putInt(key);
     }
 
-    public int findChild(int key) {
+    public void insertKeyAndChild(int key, int childPtr) {
+        int index = binarySearch(key);
+        if (index >= getNumKeys()) {
+            int rightChildPtr = getRightChildPtr();
+            setKey(index, key);
+            setChildPtr(index, rightChildPtr);
+            setRightChildPtr(childPtr);
+        } else {
+            System.arraycopy(page, CELL_START_OFFSET + (index * CELL_SIZE), page,
+                    CELL_START_OFFSET + ((index+1) * CELL_SIZE), (this.getNumKeys() - index) * CELL_SIZE);
+            setKey(index+1, key);
+            setChildPtr(index+1, childPtr);
+        }
+        setNumKeys(getNumKeys() + 1);
+    }
+
+    public int findChildPtr(int key) {
+        int low = binarySearch(key);
+        if (low < getNumKeys() && key <= getKey(low)) {
+            return getChildPtr(low);
+        }
+        return getRightChildPtr();
+    }
+
+    private int binarySearch(int key) {
         int low = 0, high = getNumKeys();
         while (low < high) {
             int mid = low + (high - low)/2;
@@ -78,11 +102,7 @@ public class InternalNode extends Node {
                 high = mid;
             }
         }
-
-        if (low < getNumKeys() && key <= getKey(low)) {
-            return getChildPtr(low);
-        }
-        return getRightChildPtr();
+        return low;
     }
 
 }

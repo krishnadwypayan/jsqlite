@@ -178,4 +178,42 @@ class TableTest {
         assertEquals(0, allRows.get(0).get(0).value());
         assertEquals(maxCells, allRows.get(maxCells).get(0).value());
     }
+
+    @Test
+    void nonRootLeafSplit() {
+        // maxCells = 102 per leaf. First split at 103 rows creates:
+        //   root(internal) -> [left leaf: 52 cells] [right leaf: 51 cells]
+        // Inserting ~52 more fills one leaf and triggers a non-root split.
+        Table table = new Table(pager, pager.allocatePage(), columns, true);
+        int maxCells = 102;
+        int totalRows = maxCells + 55; // 157 rows, enough for 2 splits
+
+        for (int i = 0; i < totalRows; i++) {
+            assertTrue(table.insertRow(makeRow(i, "user" + i)));
+        }
+
+        List<List<ColumnValue>> allRows = table.getAllRows();
+        assertEquals(totalRows, allRows.size());
+
+        // verify sorted order
+        for (int i = 0; i < totalRows; i++) {
+            assertEquals(i, allRows.get(i).get(0).value());
+            assertEquals("user" + i, allRows.get(i).get(1).value());
+        }
+    }
+
+    @Test
+    void nonRootLeafSplitReverseOrder() {
+        Table table = new Table(pager, pager.allocatePage(), columns, true);
+        int totalRows = 160;
+
+        for (int i = totalRows - 1; i >= 0; i--) {
+            assertTrue(table.insertRow(makeRow(i, "user" + i)));
+        }
+
+        List<List<ColumnValue>> allRows = table.getAllRows();
+        assertEquals(totalRows, allRows.size());
+        assertEquals(0, allRows.get(0).get(0).value());
+        assertEquals(totalRows - 1, allRows.get(totalRows - 1).get(0).value());
+    }
 }

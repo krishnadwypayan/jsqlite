@@ -60,20 +60,17 @@ public class Cursor {
 
     private void splitAndInsert(int key, byte[] rowBytes) {
 
-        // copy leafNode data to new leftNode
-        int leftNodePageNumber = pager.allocatePage();
-        byte[] leftNodePage = pager.getPage(leftNodePageNumber);
-        System.arraycopy(pager.getPage(currentPageNumber), 0, leftNodePage, 0, PAGE_SIZE);
+        /*
+        Common steps (both cases):
+            1. Allocate right page, copy upper half cells there
+            2. Set right node headers (not root, sibling pointer)
+            3. Trim current node to keep lower half only
+            4. Insert the new cell into the correct node (left or right)
+            5. Calculate separator key
+         */
 
         // calculate splitIndex keeping +1 for the new cell that needs to get inserted
         int splitIndex = (node.getMaxCells() + 1)/2;
-
-        // create leftNode and set its headers
-        LeafNode leftNode = LeafNode.from(leftNodePage, rowSize);
-        leftNode.setNodeType(NodeType.LEAF);
-        leftNode.setNumCells(splitIndex);
-        leftNode.setIsRoot(false);
-        leftNode.setParentPointer(startPage);
 
         // copy leafNode's upper half data to new rightNode
         int rightNodePageNumber = pager.allocatePage();
@@ -83,40 +80,71 @@ public class Cursor {
         System.arraycopy(pager.getPage(currentPageNumber), splitIndexCellOffset, rightNodePage, LeafNode.CELLS_START_OFFSET,
                 (node.getNumCells() - splitIndex) * cellSize);
 
-        leftNode.setNextLeaf(rightNodePageNumber);
-
         // create rightNode and set its headers
         LeafNode rightNode = LeafNode.from(rightNodePage, rowSize);
         rightNode.setNodeType(NodeType.LEAF);
         rightNode.setNumCells(node.getMaxCells() - splitIndex);
         rightNode.setIsRoot(false);
-        rightNode.setParentPointer(startPage);
         rightNode.setNextLeaf(node.getNextLeaf());
 
+        // trim current node
+        node.setNumCells(splitIndex);
+
         // insert new key in its actual node
-        if (key < leftNode.getKey(splitIndex-1)) {
-            int cellIndex = leftNode.findCell(key);
-            leftNode.insertCell(cellIndex, key, rowBytes);
-            leftNode.setNumCells(splitIndex + 1);
+        if (key < node.getKey(splitIndex-1)) {
+            int cellIndex = node.findCell(key);
+            node.insertCell(cellIndex, key, rowBytes);
+            node.setNumCells(splitIndex + 1);
         } else {
             int cellIndex = rightNode.findCell(key);
             rightNode.insertCell(cellIndex, key, rowBytes);
             rightNode.setNumCells(node.getMaxCells() - splitIndex + 1);
         }
 
-        int separatorKey = leftNode.getKey(leftNode.getNumCells() - 1);
+        int separatorKey = node.getKey(node.getNumCells() - 1);
+        
+        // -------------------------------- Common logic ends -------------------------------------------- //
 
-        // create a new internal node
-        InternalNode root = InternalNode.create(pager.getPage(startPage));
-        root.setChildPtr(0, leftNodePageNumber);
-        root.setRightChildPtr(rightNodePageNumber);
-        root.setNumKeys(1);
-        root.setKey(0, separatorKey);
+        if (node.isRoot()) {
+            // allocate a new page for the left child as well and this current page will be reused for the internal node
 
-        // mark all pages dirty
-        pager.markDirty(startPage);
-        pager.markDirty(leftNodePageNumber);
-        pager.markDirty(rightNodePageNumber);
+            // copy leafNode data to new leftNode
+            int leftNodePageNumber = pager.allocatePage();
+            byte[] leftNodePage = pager.getPage(leftNodePageNumber);
+            System.arraycopy(pager.getPage(currentPageNumber), 0, leftNodePage, 0, PAGE_SIZE);
+
+            // create leftNode and set its headers
+            LeafNode leftNode = LeafNode.from(leftNodePage, rowSize);
+            leftNode.setNodeType(NodeType.LEAF);
+            leftNode.setIsRoot(false);
+            leftNode.setParentPointer(startPage);
+            leftNode.setNextLeaf(rightNodePageNumber);
+
+            // create a new internal node
+            InternalNode root = InternalNode.create(pager.getPage(startPage));
+            root.setChildPtr(0, leftNodePageNumber);
+            root.setRightChildPtr(rightNodePageNumber);
+            root.setNumKeys(1);
+            root.setKey(0, separatorKey);
+            rightNode.setParentPointer(startPage);
+
+            // mark all pages dirty
+            pager.markDirty(startPage);
+            pager.markDirty(leftNodePageNumber);
+            pager.markDirty(rightNodePageNumber);
+        } else {
+            // get the root for the current page
+            InternalNode parent = InternalNode.from(pager.getPage(node.getParentPointer()));
+            parent.insertKeyAndChild(separatorKey, rightNodePageNumber);
+            node.setNextLeaf(rightNodePageNumber);
+            rightNode.setParentPointer(node.getParentPointer());
+
+            // mark all pages dirty
+            pager.markDirty(node.getParentPointer());
+            pager.markDirty(currentPageNumber);
+            pager.markDirty(rightNodePageNumber);
+        }
+
     }
 
     public void advance() {
@@ -136,7 +164,7 @@ public class Cursor {
         int currentPageNumber = startPage;
         while (NodeType.values()[pager.getPage(currentPageNumber)[0]] == NodeType.INTERNAL) {
             InternalNode internalNode = InternalNode.from(pager.getPage(currentPageNumber));
-            currentPageNumber = internalNode.findChild(key);
+            currentPageNumber = internalNode.findChildPtr(key);
         }
         this.currentPageNumber = currentPageNumber;
     }
